@@ -13,9 +13,12 @@ type props = NativeStackScreenProps<RootStackParamList, "Surah">;
 // };
 
 const Surah: React.FC<props> = ({ route }: props) => {
-  const { name: surahName } = route.params.surah;
+  const { surah, pageNumber } = route.params;
+  let surahName = surah?.name;
+  // const pageNumber = route.params.pageNumber;
   const [verses, setVerses] = useState([]);
-  const [currentPage, setCurrentPage] = useState(4);
+  const [words, setWords] = useState([]);
+  const [currentPage, setCurrentPage] = useState(pageNumber);
   useEffect(() => {
     axios
       .get(
@@ -45,22 +48,23 @@ const Surah: React.FC<props> = ({ route }: props) => {
           height="90%"
           alignItems={"center"}
           justifyContent={"center"}
-          px="4"
+          alignSelf="flex-start"
+          px={"5"}
         >
-          {verses.map((item, index) => {
-            return (
-              <Box key={item.id} flexDirection="row" flexWrap={"wrap"}>
-                <Text
-                  color="white"
-                  fontSize={"2xl"}
-                  fontFamily={`p${currentPage}`}
-                  textAlign="left"
-                >
-                  {item.code_v1}
-                </Text>
-              </Box>
-            );
-          })}
+          <Text
+            color="white"
+            fontFamily={`p${currentPage}`}
+            textAlign="justify"
+            fontSize={25}
+          >
+            {verses.map((item, index) => {
+              return (
+                <>
+                  <Text key={item.id}>{item.code_v1}</Text>
+                </>
+              );
+            })}
+          </Text>
         </Box>
 
         <Box

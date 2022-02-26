@@ -15,7 +15,6 @@ import { SafeAreaView } from "react-native-safe-area-context";
 const Home: React.FC = () => {
   const [data, setData] = useState<Surah | null>(null);
   const navigation = useNavigation();
-
   useEffect(() => {
     surahs ? setData(surahs) : null;
   });
@@ -60,6 +59,7 @@ const Home: React.FC = () => {
           data={data}
           indicatorStyle="white"
           renderItem={({ item, index }) => {
+            let pageNumber = item.ayahs[0].page;
             return (
               <Pressable
                 key={item.number}
@@ -69,7 +69,12 @@ const Home: React.FC = () => {
                 alignItems={"center"}
                 justifyContent="flex-start"
                 flexDirection="row"
-                onPress={() => navigation.navigate("Surah", { surah: item })}
+                onPress={() =>
+                  navigation.navigate("Surah", {
+                    surah: item,
+                    pageNumber: pageNumber,
+                  })
+                }
               >
                 <Box
                   bg="gray.700"
