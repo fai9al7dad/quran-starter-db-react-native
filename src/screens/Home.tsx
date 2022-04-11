@@ -1,108 +1,90 @@
 import { Box, FlatList, Pressable, Text } from "native-base";
 import React, { useEffect, useState } from "react";
 import { Ionicons } from "@expo/vector-icons";
-import {
-  Dimensions,
-  ListRenderItem,
-  TextInput,
-  TouchableWithoutFeedbackBase,
-} from "react-native";
-import { Surah } from "../assets/types";
-import { surahs } from "../assets/json/API.json";
+import { TextInput } from "react-native";
+
 import { useNavigation } from "@react-navigation/native";
 import { SafeAreaView } from "react-native-safe-area-context";
+import * as SQLite from "expo-sqlite";
 
 const Home: React.FC = () => {
-  const [data, setData] = useState<Surah | null>(null);
+  // const [data, setData] = useState<Surah | null>(null);
   const navigation = useNavigation();
+  const db = SQLite.openDatabase("quran.db");
+  const [lines, setLines] = useState([]);
+  const [pageNumber, setPageNumber] = useState(5);
   useEffect(() => {
-    surahs ? setData(surahs) : null;
-  });
+    // surahs ? setData(surahs) : null;
+    db.transaction((tx) => {
+      tx.executeSql(
+        `select * from page where pageNumber = ${pageNumber}`,
+        [],
+        (_, r) => {
+          // console.log(s);
+          const rows = r.rows._array;
+        }
+      );
+      tx.executeSql(
+        `select * from line where pageID = ${pageNumber}`,
+        [],
+        (_, r) => {
+          const rows = r.rows._array;
+          let ids = [];
+          for (let i = 0; i < rows.length; i++) {
+            let curLine = rows[i];
+            ids.push(curLine.id);
+          }
+          for (let i = 0; i < ids.length; i++) {
+            tx.executeSql(
+              `select * from word where lineID = ${ids[i]}`,
+              [],
+              (_, r) => {
+                const rows = r.rows._array;
+                setLines((prev) => [...prev, rows]);
+                // console.log("wasd", r);
+                // setLines(r);
+              }
+            );
+          }
+        }
+      );
+    });
+  }, []);
 
   return (
     <Box
       mt="8"
-      px="2"
-      alignItems="center"
-      mx="4"
+      alignContent={"center"}
       justifyContent={"center"}
+      alignItems={"center"}
+      height="100%"
       flex="1"
     >
-      <Box
-        flexDirection="row"
-        alignItems={"center"}
-        justifyContent="center"
-        borderBottomWidth="1"
-        borderColor={"white"}
-        mt="12"
-        mb={2}
-      >
-        <Ionicons
-          style={{ padding: 10 }}
-          name="ios-search"
-          size={22}
-          color="white"
-        />
-        <TextInput
-          style={{
-            color: "white",
-            flex: 1,
-            textAlign: "right",
-            fontSize: 18,
-          }}
-          // onChangeText={(text) => searchSurah(text)}
-        />
-      </Box>
-      <Box width="100%">
-        <FlatList
-          keyExtractor={(item) => item.number.toString()}
-          data={data}
-          indicatorStyle="white"
-          renderItem={({ item, index }) => {
-            let pageNumber = item.ayahs[0].page;
-            return (
-              <Pressable
-                key={item.number}
-                borderBottomWidth={1}
-                borderColor="gray.800"
-                py="2"
-                alignItems={"center"}
-                justifyContent="flex-start"
-                flexDirection="row"
-                onPress={() =>
-                  navigation.navigate("Surah", {
-                    surah: item,
-                    pageNumber: pageNumber,
-                  })
-                }
-              >
-                <Box
-                  bg="gray.700"
-                  alignItems={"center"}
-                  justifyContent="center"
-                  width={7}
-                  height={7}
-                  mr="4"
-                  rounded={"full"}
-                >
-                  {item.number}
-                </Box>
-                <Box alignItems={"flex-start"}>
-                  <Text fontSize={"2xl"} color="white">
-                    {item.name}
+      <Box>
+        {lines?.map((line) => {
+          return (
+            <Box flexDirection={"row"}>
+              {line?.map((word) => {
+                return (
+                  <Text
+                    fontFamily={"p6"}
+                    color="white"
+                    fontSize={"25.5px"}
+                    lineHeight={47}
+                  >
+                    {word.text}
                   </Text>
-                  <Text color={"gray.400"}>{item?.ayahs?.length} آية</Text>
-                </Box>
-              </Pressable>
-            );
-          }}
-        />
+                );
+              })}
+            </Box>
+          );
+        })}
       </Box>
     </Box>
   );
 };
 
-export default React.memo(Home);
+export default Home;
 
 // const searchSurah = (text) => {
 //   console.log(text);
