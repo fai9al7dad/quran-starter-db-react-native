@@ -15,32 +15,31 @@ import * as SQLite from "expo-sqlite";
 axios.defaults.withCredentials = true;
 export default function App() {
   // let [fontsLoaded] = useFonts(fonts);
-  let [fontsLoaded] = useFonts({
-    p6: require("./src/assets/fonts/p6.ttf"),
-  });
+  let [fontsLoaded] = useFonts(fonts);
+
   const theme = extendTheme({
-    fontConfig: { p6: { 400: { normal: "p6" } } },
+    fontConfig: fontCon,
   });
 
-  async function openDatabase() {
-    if (
-      !(await FileSystem.getInfoAsync(FileSystem.documentDirectory + "SQLite"))
-        .exists
-    ) {
-      await FileSystem.makeDirectoryAsync(
-        FileSystem.documentDirectory + "SQLite"
-      );
-    }
-    await FileSystem.downloadAsync(
-      Asset.fromModule(require("./src/assets/db/quran.db")).uri,
-      FileSystem.documentDirectory + "SQLite/quran.db"
-    );
-    return SQLite.openDatabase("quran.db");
-  }
-  // const theme = extendTheme({
-  //   fontConfig: fontCon,
-  // });
-  openDatabase();
+  // async function openDatabase() {
+  //   if (
+  //     !(await FileSystem.getInfoAsync(FileSystem.documentDirectory + "SQLite"))
+  //       .exists
+  //   ) {
+  //     await FileSystem.makeDirectoryAsync(
+  //       FileSystem.documentDirectory + "SQLite"
+  //     );
+  //   }
+  //   await FileSystem.downloadAsync(
+  //     Asset.fromModule(require("./src/assets/db/quran.db")).uri,
+  //     FileSystem.documentDirectory + "SQLite/quran.db"
+  //   );
+  //   return SQLite.openDatabase("quran.db");
+  // }
+  // // const theme = extendTheme({
+  // //   fontConfig: fontCon,
+  // // });
+  // openDatabase();
   if (!fontsLoaded) {
     return <AppLoading />;
   }

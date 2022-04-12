@@ -12,44 +12,101 @@ const Home: React.FC = () => {
   const navigation = useNavigation();
   const db = SQLite.openDatabase("quran.db");
   const [lines, setLines] = useState([]);
-  const [pageNumber, setPageNumber] = useState(5);
+  const [prevPage, setPrevPage] = useState([]);
+  const [nextPage, setNextPage] = useState([]);
+  const [pageNumber, setPageNumber] = useState(293);
+  // data array
+  // include 3 pages
+  // focus on one page
+  // if go to right
+  // increase page number
+  // if go to left
+  // increase page number
+  const fillIDs = (rows: any) => {
+    let ids = [];
+    for (let i = 0; i < rows.length; i++) {
+      let curLine = rows[i];
+      ids.push(curLine.id);
+    }
+    return ids;
+  };
+  const errorCB = (t: any, e: any) => {
+    console.log("error", e);
+  };
   useEffect(() => {
-    // surahs ? setData(surahs) : null;
     db.transaction((tx) => {
+      let query = `
+          select json_group_array(
+            json_object('id',id,'pageID',pageID,'words',
+            (select json_group_array(
+              json_object(
+              'text',text,'chapterCode',chapterCode,'isNewChapter',isNewChapter
+              )
+            )
+            from word where word.lineID = line.id)
+            )) from line where pageID = ${pageNumber}`;
+      let prevquery = `
+      select json_group_array(
+        json_object('id',id,'pageID',pageID,'words',
+        (select json_group_array(
+          json_object(
+          'text',text,'chapterCode',chapterCode,'isNewChapter',isNewChapter
+          )
+        )
+        from word where word.lineID = line.id)
+        )) from line where pageID = ${pageNumber - 1}`;
+      let nextquery = `
+      select json_group_array(
+        json_object('id',id,'pageID',pageID,'words',
+        (select json_group_array(
+          json_object(
+          'text',text,'chapterCode',chapterCode,'isNewChapter',isNewChapter
+          )
+        )
+        from word where word.lineID = line.id)
+        )) from line where pageID = ${pageNumber + 1}`;
       tx.executeSql(
-        `select * from page where pageNumber = ${pageNumber}`,
+        query,
         [],
-        (_, r) => {
-          // console.log(s);
-          const rows = r.rows._array;
-        }
+        (_, s) => {
+          const rows = s.rows._array;
+          let json = Object.values(rows[0]);
+          let data = JSON.parse(json);
+          setLines(data);
+
+          // setData(data);
+        },
+        errorCB
       );
       tx.executeSql(
-        `select * from line where pageID = ${pageNumber}`,
+        prevquery,
         [],
-        (_, r) => {
-          const rows = r.rows._array;
-          let ids = [];
-          for (let i = 0; i < rows.length; i++) {
-            let curLine = rows[i];
-            ids.push(curLine.id);
-          }
-          for (let i = 0; i < ids.length; i++) {
-            tx.executeSql(
-              `select * from word where lineID = ${ids[i]}`,
-              [],
-              (_, r) => {
-                const rows = r.rows._array;
-                setLines((prev) => [...prev, rows]);
-                // console.log("wasd", r);
-                // setLines(r);
-              }
-            );
-          }
-        }
+        (_, s) => {
+          const rows = s.rows._array;
+          let json = Object.values(rows[0]);
+          let data = JSON.parse(json);
+          setLines(data);
+
+          // setData(data);
+        },
+        errorCB
       );
+      tx.executeSql(
+        nextquery,
+        [],
+        (_, s) => {
+          const rows = s.rows._array;
+          let json = Object.values(rows[0]);
+          let data = JSON.parse(json);
+          setLines(data);
+
+          // setData(data);
+        },
+        errorCB
+      );
+      let ids: any = [];
     });
-  }, []);
+  }, [pageNumber]);
 
   return (
     <Box
@@ -60,26 +117,64 @@ const Home: React.FC = () => {
       height="100%"
       flex="1"
     >
-      <Box>
-        {lines?.map((line) => {
+      {pageNumber}
+      <FlatList
+        data={[prevPage, lines, nextPage]}
+        renderItem={({ item, index }) => {
           return (
-            <Box flexDirection={"row"}>
-              {line?.map((word) => {
+            <Box key={index}>
+              {item?.map((line, index) => {
                 return (
-                  <Text
-                    fontFamily={"p6"}
-                    color="white"
-                    fontSize={"25.5px"}
-                    lineHeight={47}
-                  >
-                    {word.text}
-                  </Text>
+                  <Box key={index} flexDirection={"row"}>
+                    {line?.words?.map((word, index) => {
+                      if (word.isNewChapter) {
+                        return (
+                          <Text
+                            key={index}
+                            fontFamily={"surahname"}
+                            color="white"
+                            fontSize={"25.5px"}
+                            lineHeight={47}
+                          >
+                            {word.chapterCode}surah
+                          </Text>
+                        );
+                      }
+                      return (
+                        <Text
+                          key={index}
+                          color="white"
+                          fontSize={"25.5px"}
+                          lineHeight={47}
+                          style={{ fontFamily: `p${line.pageID}` }}
+                        >
+                          {word.text}
+                        </Text>
+                      );
+                    })}
+                  </Box>
                 );
               })}
             </Box>
           );
-        })}
-      </Box>
+        }}
+      />
+      <Pressable
+        py="2"
+        position={"absolute"}
+        left="0"
+        height={"100%"}
+        px="10"
+        onPress={() => setPageNumber(pageNumber - 1)}
+      />
+      <Pressable
+        py="2"
+        position={"absolute"}
+        right="0"
+        height={"100%"}
+        px="10"
+        onPress={() => setPageNumber(pageNumber + 1)}
+      />
     </Box>
   );
 };
